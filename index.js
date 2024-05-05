@@ -9,11 +9,12 @@ const bcrypt = require("bcrypt");
 
 const app = express()
 const port = 4000;
-const ip = "192.168.1.190"
+const ip = "localhost"
 
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 app.use(cors());
+
 app.listen(port, ip, () => {
     console.log(`Server is running on ${ip} port :${port}`);
 });
