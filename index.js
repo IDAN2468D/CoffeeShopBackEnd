@@ -160,6 +160,7 @@ app.post("/forgot-password", async (req, res) => {
         await user.save();
 
         sendResetPasswordEmail(user.email, resetToken);
+        await sendVerificationEmail(user.email, resetToken);
         console.log('Email:', user.email);
         console.log('Reset Token:', resetToken);
 
