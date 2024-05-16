@@ -159,7 +159,7 @@ app.post("/forgot-password", async (req, res) => {
         user.resetTokenExpires = Date.now() + 3600000;
         await user.save();
 
-        sendResetPasswordEmail(user.email, resetToken);
+        await sendResetPasswordEmail(user.email, resetToken);
         console.log('Email:', user.email);
         console.log('Reset Token:', resetToken);
 
