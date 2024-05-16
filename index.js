@@ -188,7 +188,7 @@ const sendResetPasswordEmail = async (email, resetToken) => {
         from: "idankzm@gmail.com",
         to: email,
         subject: "Reset Password",
-        text: `To reset your password, click the following link: http://192.168.1.190:4000/reset-password/${resetToken}`,
+        text: `To reset your password, click the following link: https://jittery-sweatshirt-seal.cyclic.app/reset-password/${resetToken}`,
     };
     try {
         await transporter.sendMail(mailOptions);
