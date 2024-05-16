@@ -73,7 +73,7 @@ const sendVerificationEmail = async (email, verificationToken) => {
         from: "idankzm@gmail.com",
         to: email,
         subject: "Email Verification",
-        text: `Please click the following link to verify your email: http://192.168.1.190:4000/verify/${verificationToken}`,
+        text: `Please click the following link to verify your email: https://jittery-sweatshirt-seal.cyclic.app/verify/${verificationToken}`,
     };
     try {
         await transporter.sendMail(mailOptions);
