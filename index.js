@@ -46,7 +46,7 @@ app.post("/register", async (req, res) => {
         newUser.verificationToken = crypto.randomBytes(20).toString("hex");
         await newUser.save();
         console.log("New User Registered:", newUser);
-        sendVerificationEmail(newUser.email, newUser.verificationToken);
+        await sendVerificationEmail(newUser.email, newUser.verificationToken); // Added await here
 
         res.status(201).json({
             message:
