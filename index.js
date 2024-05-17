@@ -73,7 +73,7 @@ const sendVerificationEmail = async (email, verificationToken) => {
         from: "idankzm@gmail.com",
         to: email,
         subject: "Email Verification",
-        text: `Please click the following link to verify your email: https://jittery-sweatshirt-seal.cyclic.app/verify/${verificationToken}`,
+        text: `Please click the following link to verify your email: https://rich-tan-xerus-hose.cyclic.app/verify/${verificationToken}`,
     };
     try {
         await transporter.sendMail(mailOptions);
@@ -187,7 +187,7 @@ const sendResetPasswordEmail = async (email, resetToken) => {
         from: "idankzm@gmail.com",
         to: email,
         subject: "Reset Password",
-        text: `To reset your password, click the following link: https://jittery-sweatshirt-seal.cyclic.app/reset-password/${resetToken}`,
+        text: `To reset your password, click the following link: https://rich-tan-xerus-hose.cyclic.app/reset-password/${resetToken}`,
     };
     try {
         await transporter.sendMail(mailOptions);
