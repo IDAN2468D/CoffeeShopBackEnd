@@ -27,8 +27,12 @@ const userSchema = new mongoose.Schema({
         default: Date.now() + 3600000,
     },
     verificationToken: String,
+    profilePic: {
+        type: String,
+        required: false,
+    },
 });
 
 const User = mongoose.model("User", userSchema);
 
-module.exports = User
+module.exports = User;
