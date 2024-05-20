@@ -35,7 +35,6 @@ mongoose
 
 const User = require("./models/user");
 
-// Set storage engine for profile picture upload
 const storage = multer.diskStorage({
     destination: './uploads/',
     filename: (req, file, cb) => {
