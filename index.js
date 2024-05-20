@@ -22,7 +22,7 @@ app.listen(port, () => {
 });
 
 mongoose
-    .connect("mongodb+srv://username:password@cluster0.purdk.mongodb.net/CoffeeShop?retryWrites=true&w=majority", {
+    .connect("mongodb+srv://idankzm:idankzm2468@cluster0.purdk.mongodb.net/CoffeeShop?retryWrites=true&w=majority", {
         useNewUrlParser: true,
         useUnifiedTopology: true,
     })
