@@ -37,11 +37,7 @@ const User = require("./models/user");
 
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
-        const uploadDir = './uploads/';
-        fs.mkdir(uploadDir, { recursive: true }, (err) => {
-            if (err) return cb(err);
-            cb(null, uploadDir);
-        });
+        cb(null, './uploads/');
     },
     filename: function (req, file, cb) {
         cb(null, file.fieldname + '-' + Date.now() + path.extname(file.originalname));
