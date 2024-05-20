@@ -13,8 +13,8 @@ const app = express();
 const port = 4000;
 const ip = "localhost";
 
-app.use(bodyParser.urlencoded({ extended: false, limit: '50mb' }));
-app.use(bodyParser.json({ limit: '50mb' }));
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
 app.use(cors());
 
 app.listen(port, ip, () => {
@@ -45,7 +45,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({
     storage: storage,
-    limits: { fileSize: 2000000 }, // 1MB
+    limits: { fileSize: 1000000 }, // 1MB
     fileFilter: (req, file, cb) => {
         checkFileType(file, cb);
     }
