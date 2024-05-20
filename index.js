@@ -8,21 +8,21 @@ const cors = require("cors");
 const bcrypt = require("bcrypt");
 const multer = require('multer');
 const path = require('path');
+const fs = require('fs');
 
 const app = express();
-const port = 4000;
-const ip = "localhost";
+const port = process.env.PORT || 4000;
 
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 app.use(cors());
 
-app.listen(port, ip, () => {
-    console.log(`Server is running on ${ip} port :${port}`);
+app.listen(port, () => {
+    console.log(`Server is running on port ${port}`);
 });
 
 mongoose
-    .connect("mongodb+srv://idankzm:idankzm2468@cluster0.purdk.mongodb.net/CoffeeShop?retryWrites=true&w=majority", {
+    .connect("mongodb+srv://username:password@cluster0.purdk.mongodb.net/CoffeeShop?retryWrites=true&w=majority", {
         useNewUrlParser: true,
         useUnifiedTopology: true,
     })
@@ -30,14 +30,16 @@ mongoose
         console.log("Connected to MongoDB");
     })
     .catch((err) => {
-        console.log("Error connecting to MongoDb", err);
+        console.log("Error connecting to MongoDB:", err);
     });
 
 const User = require("./models/user");
 
 const storage = multer.diskStorage({
-    destination: './uploads/',
-    filename: (req, file, cb) => {
+    destination: function (req, file, cb) {
+        cb(null, './uploads/');
+    },
+    filename: function (req, file, cb) {
         cb(null, file.fieldname + '-' + Date.now() + path.extname(file.originalname));
     }
 });
@@ -45,7 +47,7 @@ const storage = multer.diskStorage({
 const upload = multer({
     storage: storage,
     limits: { fileSize: 1000000 }, // 1MB
-    fileFilter: (req, file, cb) => {
+    fileFilter: function (req, file, cb) {
         checkFileType(file, cb);
     }
 }).single('profilePic');
@@ -89,18 +91,18 @@ const sendVerificationEmail = async (email, verificationToken) => {
     const transporter = nodemailer.createTransport({
         service: "Gmail",
         auth: {
-            user: "idankzm@gmail.com",
-            pass: "yddxnhwipxuecbne",
+            user: "your.email@gmail.com", // Update with your email
+            pass: "yourpassword", // Update with your password
         },
         tls: {
             rejectUnauthorized: false,
         },
     });
     const mailOptions = {
-        from: "idankzm@gmail.com",
+        from: "your.email@gmail.com", // Update with your email
         to: email,
         subject: "Email Verification",
-        text: `Please click the following link to verify your email: https://rich-tan-xerus-hose.cyclic.app/verify/${verificationToken}`,
+        text: `Please click the following link to verify your email: https://yourdomain.com/verify/${verificationToken}`, // Update with your domain
     };
     try {
         await transporter.sendMail(mailOptions);
@@ -179,7 +181,7 @@ app.post("/forgot-password", async (req, res) => {
             return res.status(404).json({ message: "User not found" });
         }
 
-        const resetToken = require('crypto').randomBytes(20).toString('hex');
+        const resetToken = crypto.randomBytes(20).toString('hex');
         user.resetToken = resetToken;
         user.resetTokenExpires = Date.now() + 3600000;
         await user.save();
@@ -201,18 +203,18 @@ const sendResetPasswordEmail = async (email, resetToken) => {
     const transporter = nodemailer.createTransport({
         service: "Gmail",
         auth: {
-            user: "idankzm@gmail.com",
-            pass: "yddxnhwipxuecbne",
+            user: "your.email@gmail.com", // Update with your email
+            pass: "yourpassword", // Update with your password
         },
         tls: {
             rejectUnauthorized: false,
         },
     });
     const mailOptions = {
-        from: "idankzm@gmail.com",
+        from: "your.email@gmail.com", // Update with your email
         to: email,
         subject: "Reset Password",
-        text: `To reset your password, click the following link: https://rich-tan-xerus-hose.cyclic.app/reset-password/${resetToken}`,
+        text: `To reset your password, click the following link: https://yourdomain.com/reset-password/${resetToken}`, // Update with your domain
     };
     try {
         await transporter.sendMail(mailOptions);
