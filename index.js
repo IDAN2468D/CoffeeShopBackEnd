@@ -6,12 +6,10 @@ const nodemailer = require("nodemailer");
 const jwt = require("jsonwebtoken");
 const cors = require("cors");
 const bcrypt = require("bcrypt");
-const multer = require('multer');
-const path = require('path');
 
-const app = express();
+const app = express()
 const port = 4000;
-const ip = "localhost";
+const ip = "localhost"
 
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
@@ -35,33 +33,6 @@ mongoose
 
 const User = require("./models/user");
 
-// Set storage engine for profile picture upload
-const storage = multer.diskStorage({
-    destination: './uploads/',
-    filename: (req, file, cb) => {
-        cb(null, file.fieldname + '-' + Date.now() + path.extname(file.originalname));
-    }
-});
-
-const upload = multer({
-    storage: storage,
-    limits: { fileSize: 1000000 }, // 1MB
-    fileFilter: (req, file, cb) => {
-        checkFileType(file, cb);
-    }
-}).single('profilePic');
-
-function checkFileType(file, cb) {
-    const filetypes = /jpeg|jpg|png|gif/;
-    const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
-    const mimetype = filetypes.test(file.mimetype);
-    if (mimetype && extname) {
-        return cb(null, true);
-    } else {
-        cb('Error: Images Only!');
-    }
-}
-
 app.post("/register", async (req, res) => {
     try {
         const { name, email, password } = req.body;
@@ -75,10 +46,11 @@ app.post("/register", async (req, res) => {
         newUser.verificationToken = crypto.randomBytes(20).toString("hex");
         await newUser.save();
         console.log("New User Registered:", newUser);
-        await sendVerificationEmail(newUser.email, newUser.verificationToken);
+        await sendVerificationEmail(newUser.email, newUser.verificationToken); // Added await here
 
         res.status(201).json({
-            message: "Registration successful. Please check your email for verification.",
+            message:
+                "Registration successful. Please check your email for verification.",
         });
     } catch (error) {
         console.log("Error during registration:", error);
@@ -145,14 +117,16 @@ const checkUserExist = async (email) => {
 
 const generateSecretKey = () => {
     const secretKey = crypto.randomBytes(32).toString("hex");
-    return secretKey;
-};
+
+    return secretKey
+}
 
 const secretKey = generateSecretKey();
 
 app.post("/login", async (req, res) => {
     try {
         const { email, password } = req.body;
+
         const user = await User.findOne({ email });
         if (!user) {
             return res.status(401).json({ message: "Invalid email or password" });
@@ -245,31 +219,4 @@ app.post("/reset-password/:token", async (req, res) => {
         console.error("Error during password reset:", error);
         res.status(500).json({ message: "Password reset failed" });
     }
-});
-
-// Route to upload profile picture
-app.post('/upload-profile-pic', (req, res) => {
-    upload(req, res, async (err) => {
-        if (err) {
-            return res.status(400).json({ message: err });
-        } else {
-            if (req.file == undefined) {
-                return res.status(400).json({ message: 'No file selected' });
-            } else {
-                try {
-                    const userId = req.body.userId;
-                    const user = await User.findById(userId);
-                    if (!user) {
-                        return res.status(404).json({ message: 'User not found' });
-                    }
-                    user.profilePic = req.file.path;
-                    await user.save();
-                    res.status(200).json({ message: 'Profile picture uploaded successfully', path: req.file.path });
-                } catch (error) {
-                    console.error('Error during profile picture upload:', error);
-                    res.status(500).json({ message: 'Profile picture upload failed' });
-                }
-            }
-        }
-    });
 });
