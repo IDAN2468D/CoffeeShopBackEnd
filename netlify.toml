@@ -1,6 +1,6 @@
 [build]
   command = "npm install"
-  publish = "public"
+  publish = "CoffeeShopBackEnd"
 
 [[redirects]]
   from = "/*"
