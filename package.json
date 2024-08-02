@@ -5,7 +5,6 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "build": "echo 'Netlify functions do not require a build script'",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
