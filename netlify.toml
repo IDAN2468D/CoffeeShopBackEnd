@@ -1,0 +1,9 @@
+[build]
+  command = "npm install && npm run build"
+  functions = "functions"
+  publish = "public" # אם יש לך תיקייה ל-front-end, אחרת תוכל להשאיר את זה ריק
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
