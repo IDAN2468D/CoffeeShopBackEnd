@@ -17,44 +17,72 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 app.use(cors());
 
-// Connect to MongoDB
-mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
-    .then(() => console.log("Connected to MongoDB"))
-    .catch(err => console.error("Error connecting to MongoDB:", err));
+app.listen(port, () => {
+    console.log(`Server is running on port ${port}`);
+});
 
-// Define User model
+mongoose
+    .connect("mongodb+srv://idankzm:idankzm2468@cluster0.purdk.mongodb.net/CoffeeShop?retryWrites=true&w=majority", {
+        useNewUrlParser: true,
+        useUnifiedTopology: true,
+    })
+    .then(() => {
+        console.log("Connected to MongoDB");
+    })
+    .catch((err) => {
+        console.log("Error connecting to MongoDB:", err);
+    });
+
 const User = require("./models/user");
 
-// Configure multer for file uploads
 const storage = multer.diskStorage({
-    destination: (req, file, cb) => cb(null, './uploads/'),
-    filename: (req, file, cb) => cb(null, `${file.fieldname}-${Date.now()}${path.extname(file.originalname)}`)
+    destination: function (req, file, cb) {
+        cb(null, './uploads/');
+    },
+    filename: function (req, file, cb) {
+        cb(null, file.fieldname + '-' + Date.now() + path.extname(file.originalname));
+    }
 });
-const upload = multer({ storage, limits: { fileSize: 1000000 }, fileFilter: checkFileType }).single('profilePic');
+
+const upload = multer({
+    storage: storage,
+    limits: { fileSize: 1000000 },
+    fileFilter: function (req, file, cb) {
+        checkFileType(file, cb);
+    }
+}).single('profilePic');
 
 function checkFileType(file, cb) {
     const filetypes = /jpeg|jpg|png|gif/;
     const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
     const mimetype = filetypes.test(file.mimetype);
-    cb(mimetype && extname ? null : 'Error: Images Only!', mimetype && extname);
+    if (mimetype && extname) {
+        return cb(null, true);
+    } else {
+        cb('Error: Images Only!');
+    }
 }
 
-// Start server
-app.listen(port, () => console.log(`Server is running on port ${port}`));
-
-// Define routes
 app.post("/register", async (req, res) => {
     try {
         const { name, email, password } = req.body;
         const hashedPassword = await bcrypt.hash(password, 10);
-        if (await User.findOne({ email })) {
+        const existingUser = await User.findOne({ email });
+        if (existingUser) {
+            console.log("Email already registered:", email);
             return res.status(400).json({ message: "Email already registered" });
         }
-        const newUser = new User({ name, email, password: hashedPassword, verificationToken: crypto.randomBytes(20).toString("hex") });
+        const newUser = new User({ name, email, password: hashedPassword });
+        newUser.verificationToken = crypto.randomBytes(20).toString("hex");
         await newUser.save();
+        console.log("New User Registered:", newUser);
         await sendVerificationEmail(newUser.email, newUser.verificationToken);
-        res.status(201).json({ message: "Registration successful. Please check your email for verification." });
+
+        res.status(201).json({
+            message: "Registration successful. Please check your email for verification.",
+        });
     } catch (error) {
+        console.log("Error during registration:", error);
         res.status(500).json({ message: "Registration failed" });
     }
 });
@@ -62,17 +90,23 @@ app.post("/register", async (req, res) => {
 const sendVerificationEmail = async (email, verificationToken) => {
     const transporter = nodemailer.createTransport({
         service: "Gmail",
-        auth: { user: process.env.EMAIL, pass: process.env.EMAIL_PASS },
-        tls: { rejectUnauthorized: false }
+        auth: {
+            user: "your.email@gmail.com", // Update with your email
+            pass: "yourpassword", // Update with your password
+        },
+        tls: {
+            rejectUnauthorized: false,
+        },
     });
     const mailOptions = {
-        from: process.env.EMAIL,
+        from: "your.email@gmail.com", // Update with your email
         to: email,
         subject: "Email Verification",
-        text: `Please click the following link to verify your email: https://yourdomain.com/verify/${verificationToken}`
+        text: `Please click the following link to verify your email: https://yourdomain.com/verify/${verificationToken}`, // Update with your domain
     };
     try {
         await transporter.sendMail(mailOptions);
+        console.log("Verification email sent successfully");
     } catch (error) {
         console.error("Error sending verification email:", error);
     }
@@ -80,58 +114,87 @@ const sendVerificationEmail = async (email, verificationToken) => {
 
 app.get("/verify/:token", async (req, res) => {
     try {
-        const user = await User.findOne({ verificationToken: req.params.token });
-        if (!user) return res.status(404).json({ message: "Invalid verification token" });
+        const token = req.params.token;
+        const user = await User.findOne({ verificationToken: token });
+        if (!user) {
+            return res.status(404).json({ message: "Invalid verification token" });
+        }
         user.verified = true;
         user.verificationToken = undefined;
         await user.save();
         res.status(200).json({ message: "Email verified successfully" });
     } catch (error) {
-        res.status(500).json({ message: "Email verification failed" });
+        res.status(500).json({ message: "Email verification Failed" });
     }
 });
 
-app.get('/user-exist', async (req, res) => {
-    const response = await checkUserExist(req.query.email);
+app.get('/user-exist', async (req, res, next) => {
+    const { email } = req.query;
+    const response = await checkUserExist(email);
     res.json(response);
 });
 
 const checkUserExist = async (email) => {
     try {
-        return !!await User.findOne({ email });
+        const existingUser = await User.findOne({ email });
+        return !!existingUser;
     } catch (error) {
         console.error("Error checking user existence:", error);
         return false;
     }
 };
 
-const generateSecretKey = () => crypto.randomBytes(32).toString("hex");
+const generateSecretKey = () => {
+    const secretKey = crypto.randomBytes(32).toString("hex");
+    return secretKey;
+};
+
 const secretKey = generateSecretKey();
 
 app.post("/login", async (req, res) => {
     try {
         const { email, password } = req.body;
         const user = await User.findOne({ email });
-        if (!user || !(await bcrypt.compare(password, user.password))) {
+        if (!user) {
             return res.status(401).json({ message: "Invalid email or password" });
         }
+
+        const passwordMatch = await bcrypt.compare(password, user.password);
+        if (!passwordMatch) {
+            return res.status(401).json({ message: "Invalid password" });
+        }
+
         const token = jwt.sign({ userId: user._id }, secretKey);
         res.status(200).json({ token });
     } catch (error) {
-        res.status(500).json({ message: "Login failed" });
+        console.error('Login Error:', error);
+        res.status(500).json({ message: "Login Failed" });
     }
 });
 
 app.post("/forgot-password", async (req, res) => {
     try {
-        const user = await User.findOne({ email: req.body.email });
-        if (!user) return res.status(404).json({ message: "User not found" });
-        user.resetToken = crypto.randomBytes(20).toString('hex');
+        const { email } = req.body;
+        const user = await User.findOne({ email });
+
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        const resetToken = crypto.randomBytes(20).toString('hex');
+        user.resetToken = resetToken;
         user.resetTokenExpires = Date.now() + 3600000;
         await user.save();
-        await sendResetPasswordEmail(user.email, user.resetToken);
-        res.status(200).json({ message: "Password reset instructions sent to your email" });
+
+        await sendResetPasswordEmail(user.email, resetToken);
+        console.log('Email:', user.email);
+        console.log('Reset Token:', resetToken);
+
+        res.status(200).json({
+            message: "Password reset instructions sent to your email",
+        });
     } catch (error) {
+        console.error("Error during forgot password:", error);
         res.status(500).json({ message: "Forgot password failed" });
     }
 });
@@ -139,17 +202,23 @@ app.post("/forgot-password", async (req, res) => {
 const sendResetPasswordEmail = async (email, resetToken) => {
     const transporter = nodemailer.createTransport({
         service: "Gmail",
-        auth: { user: process.env.EMAIL, pass: process.env.EMAIL_PASS },
-        tls: { rejectUnauthorized: false }
+        auth: {
+            user: "your.email@gmail.com", // Update with your email
+            pass: "yourpassword", // Update with your password
+        },
+        tls: {
+            rejectUnauthorized: false,
+        },
     });
     const mailOptions = {
-        from: process.env.EMAIL,
+        from: "your.email@gmail.com", // Update with your email
         to: email,
         subject: "Reset Password",
-        text: `To reset your password, click the following link: https://yourdomain.com/reset-password/${resetToken}`
+        text: `To reset your password, click the following link: https://yourdomain.com/reset-password/${resetToken}`, // Update with your domain
     };
     try {
         await transporter.sendMail(mailOptions);
+        console.log("Reset password email sent successfully");
     } catch (error) {
         console.error("Error sending reset password email:", error);
     }
@@ -157,14 +226,24 @@ const sendResetPasswordEmail = async (email, resetToken) => {
 
 app.post("/reset-password/:token", async (req, res) => {
     try {
-        const user = await User.findOne({ resetToken: req.params.token, resetTokenExpires: { $gt: Date.now() } });
-        if (!user) return res.status(400).json({ message: "Invalid or expired reset token" });
-        user.password = await bcrypt.hash(req.body.newPassword, 10);
+        const { token } = req.params;
+        const { newPassword } = req.body;
+
+        const user = await User.findOne({
+            resetToken: token,
+            resetTokenExpires: { $gt: Date.now() },
+        });
+        if (!user || !user._id) {
+            console.log('Token check failed. User not found or expired.');
+            return res.status(400).json({ message: "Invalid or expired reset token" });
+        }
+        user.password = await bcrypt.hash(newPassword, 10);
         user.resetToken = undefined;
         user.resetTokenExpires = undefined;
         await user.save();
         res.status(200).json({ message: "Password reset successful" });
     } catch (error) {
+        console.error("Error during password reset:", error);
         res.status(500).json({ message: "Password reset failed" });
     }
 });
@@ -172,16 +251,26 @@ app.post("/reset-password/:token", async (req, res) => {
 // Route to upload profile picture
 app.post('/upload-profile-pic', (req, res) => {
     upload(req, res, async (err) => {
-        if (err) return res.status(400).json({ message: err.message });
-        if (!req.file) return res.status(400).json({ message: 'No file selected' });
-        try {
-            const user = await User.findById(req.body.userId);
-            if (!user) return res.status(404).json({ message: 'User not found' });
-            user.profilePic = req.file.path;
-            await user.save();
-            res.status(200).json({ message: 'Profile picture uploaded successfully', path: req.file.path });
-        } catch (error) {
-            res.status(500).json({ message: 'Profile picture upload failed' });
+        if (err) {
+            return res.status(400).json({ message: err });
+        } else {
+            if (req.file == undefined) {
+                return res.status(400).json({ message: 'No file selected' });
+            } else {
+                try {
+                    const userId = req.body.userId;
+                    const user = await User.findById(userId);
+                    if (!user) {
+                        return res.status(404).json({ message: 'User not found' });
+                    }
+                    user.profilePic = req.file.path;
+                    await user.save();
+                    res.status(200).json({ message: 'Profile picture uploaded successfully', path: req.file.path });
+                } catch (error) {
+                    console.error('Error during profile picture upload:', error);
+                    res.status(500).json({ message: 'Profile picture upload failed' });
+                }
+            }
         }
     });
 });
